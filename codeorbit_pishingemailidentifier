@@ -1,0 +1,103 @@
+# Sample Email Data
+emails = [
+    {
+        "id": 1,
+        "from": "Security Alert <service@sec-banknet-update.com>",
+        "subject": "URGENT: Your Account Has Been Suspended!",
+        "greeting": "Dear Customer",
+        "body": "We detected unusual login attempts. Your access will be permanently locked within 12 hours unless you confirm your details here: http://bit.ly/fake-bank-login",
+        "has_attachment": False,
+        "attachment_name": ""
+    },
+    {
+        "id": 2,
+        "from": "Helpdesk Admin <admin-support@company-portal-login.org>",
+        "subject": "Action Required: Mandatory Password Reset",
+        "greeting": "Hello User",
+        "body": "Your corporate password expires today. Please click the link to keep your current password: http://corporate-login-portal.org/reset",
+        "has_attachment": True,
+        "attachment_name": "Update_Patch.exe"
+    },
+    {
+        "id": 3,
+        "from": "Amazon Orders <shipment-tracking@amazon.com>",
+        "subject": "Your order #112-9842104 has shipped",
+        "greeting": "Hi Alex",
+        "body": "Your package is on its way! You can track your shipment details directly in your account dashboard by visiting Amazon.com.",
+        "has_attachment": False,
+        "attachment_name": ""
+    }
+]
+
+# Keywords and domain markers commonly seen in phishing
+URGENT_WORDS = ["urgent", "immediately", "suspended", "locked", "within 12 hours", "action required"]
+GENERIC_GREETINGS = ["dear customer", "hello user", "dear user", "valued customer"]
+SUSPICIOUS_DOMAINS = ["sec-banknet-update.com", "company-portal-login.org", "bit.ly"]
+DANGEROUS_EXTENSIONS = [".exe", ".zip", ".scr", ".bat"]
+
+def analyze_email(email):
+    flags = []
+    
+    # 1. Check Sender Domain
+    sender = email["from"].lower()
+    if any(domain in sender for domain in SUSPICIOUS_DOMAINS):
+        flags.append("Suspicious/Unrecognized Sender Domain")
+
+    # 2. Check Subject/Body for Urgent Language
+    content = (email["subject"] + " " + email["body"]).lower()
+    if any(word in content for word in URGENT_WORDS):
+        flags.append("Urgent or Threatening Language (Creates Panic)")
+
+    # 3. Check for Generic Greetings
+    greeting = email["greeting"].lower()
+    if any(generic in greeting for generic in GENERIC_GREETINGS):
+        flags.append("Generic Greeting (Does not use your name)")
+
+    # 4. Check for Insecure or Shortened Links
+    if "http://" in email["body"].lower() or "bit.ly" in email["body"].lower():
+        flags.append("Insecure (HTTP) or Shortened Link")
+
+    # 5. Check for Suspicious Attachments
+    if email["has_attachment"]:
+        ext = email["attachment_name"].lower()
+        if any(ext.endswith(danger) for danger in DANGEROUS_EXTENSIONS):
+            flags.append(f"Executable/Dangerous Attachment ({email['attachment_name']})")
+
+    return flags
+
+def main():
+    print("==================================================")
+    print("       PHISHING EMAIL IDENTIFIER & ANALYZER       ")
+    print("==================================================\n")
+
+    for email in emails:
+        print(f"--- EMAIL #{email['id']} ---")
+        print(f"From:    {email['from']}")
+        print(f"Subject: {email['subject']}")
+        print(f"Body:    {email['body']}")
+        if email['has_attachment']:
+            print(f"Attachment: {email['attachment_name']}")
+            
+        red_flags = analyze_email(email)
+        
+        print("\nAnalysis Result:")
+        if red_flags:
+            print("STATUS: ⚠️ PHISHING SUSPECTED")
+            print("Red Flags Found:")
+            for flag in red_flags:
+                print(f"  - {flag}")
+        else:
+            print("STATUS: ✅ LEGITIMATE EMAIL")
+            print("  - No obvious phishing red flags detected.")
+            
+        print("-" * 50 + "\n")
+
+    print("=== SUMMARY REPORT ===")
+    print("Key Red Flags to Always Watch For:")
+    print("1. Sense of urgency demanding immediate action.")
+    print("2. Links using HTTP instead of HTTPS, or using URL shorteners.")
+    print("3. Senders using fake/unfamiliar domain names.")
+    print("4. Unexpected executable attachments (.exe, .zip).")
+
+if __name__ == "__main__":
+    main()
